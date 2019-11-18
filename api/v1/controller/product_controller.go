@@ -1,8 +1,8 @@
 package ctl
 
 import (
-	"product_management/api/v1/models"
-	repo "product_management/api/v1/repository"
+	"products_management/api/v1/models"
+	repo "products_management/api/v1/repository"
 )
 
 //ProductController ...

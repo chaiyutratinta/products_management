@@ -1,0 +1,10 @@
+version: '3.7'
+
+services:
+    mongodb:
+        image: mongo
+        container_name: products_db
+        environment:
+            MONGO_INITDB_DATABASE: products_management
+        ports:
+            - 27017:27017

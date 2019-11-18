@@ -2,7 +2,7 @@ package main
 
 import (
 	"net/http"
-	"product_management/api/v1/domain"
+	"products_management/api/v1/domain"
 )
 
 func main() {

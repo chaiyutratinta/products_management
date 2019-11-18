@@ -2,12 +2,13 @@ package repo
 
 import (
 	"context"
-	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"product_management/utils"
-	"product_management/api/v1/models"
+	"products_management/api/v1/models"
+	"products_management/utils"
 )
 
 //Client ...
@@ -21,8 +22,7 @@ type dataBase struct {
 
 //GetDbSession return DB session
 func GetDbSession() Client {
-	ctx, _ 		:= context.WithTimeout(context.Background(), 10*time.Second)
-	client, err 	:= mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
 	utils.Checker(err)
 
 	return &dataBase{
@@ -30,12 +30,22 @@ func GetDbSession() Client {
 	}
 }
 
-func (client *dataBase) GetAll() models.Products {
-
-	return models.Products {
-		Name	: "Dildo", 
-		ID	: "id: wer23sdfq", 
-		Exp	: "none",
-	}
+type Result struct {
+	ID   string `bson: "_id"`
+	Name string `bson: "name"`
+	Exp  string `bson: "expDate"`
 }
 
+func (db *dataBase) GetAll() models.Products {
+	collection := db.client.Database("products_management").Collection("products")
+
+	result := Result{}
+	err := collection.FindOne(context.TODO(), bson.D{}).Decode(&result)
+	utils.Checker(err)
+
+	return models.Products{
+		Name: result.Name,
+		ID:   result.ID,
+		Exp:  result.Exp,
+	}
+}
