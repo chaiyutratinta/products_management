@@ -1,8 +1,8 @@
-package ctl
+package controller
 
 import (
-	"products_management/api/v1/models"
-	repo "products_management/api/v1/repository"
+	"products_management/models"
+	"products_management/repository"
 )
 
 //ProductController ...
@@ -12,11 +12,11 @@ type ProductController interface {
 
 //ProductsUseCase ...
 type productController struct {
-	Repo repo.Client
+	Repo repository.Client
 }
 
 //NewController ...
-func NewController(r repo.Client) ProductController {
+func NewController(r repository.Client) ProductController {
 
 	return &productController{
 		Repo: r,

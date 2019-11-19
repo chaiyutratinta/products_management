@@ -1,4 +1,4 @@
-package repo
+package repository
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"products_management/api/v1/models"
+	"products_management/models"
 	"products_management/utils"
 )
 

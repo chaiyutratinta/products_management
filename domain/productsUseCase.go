@@ -3,8 +3,8 @@ package domain
 import (
 	"fmt"
 	"net/http"
-	ctl "products_management/api/v1/controller"
-	repo "products_management/api/v1/repository"
+	"products_management/controller"
+	"products_management/repository"
 )
 
 //ProductUseCase ...
@@ -13,13 +13,13 @@ type ProductUseCase interface {
 }
 
 type productUseCase struct {
-	UseCase ctl.ProductController
+	UseCase controller.ProductController
 }
 
 //GetProducts for get all products
 func GetProducts() ProductUseCase {
-	client := repo.GetDbSession()
-	controller := ctl.NewController(client)
+	client := repository.GetDbSession()
+	controller := controller.NewController(client)
 
 	return &productUseCase{
 		UseCase: controller,
