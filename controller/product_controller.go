@@ -7,7 +7,8 @@ import (
 
 //ProductController ...
 type ProductController interface {
-	GetAllProduct() []models.Products
+	GetAllProduct() *[]models.Products
+	AddProduct(*models.Products) error
 }
 
 //ProductsUseCase ...
@@ -23,8 +24,22 @@ func NewController(r repository.Client) ProductController {
 	}
 }
 
-func (r *productController) GetAllProduct() []models.Products {
-	products := r.Repo.GetAll()
+func (r *productController) GetAllProduct() *[]models.Products {
+	products, err := r.Repo.GetAll()
 
-	return []models.Products{products}
+	if err != nil {
+		return &[]models.Products{}
+	}
+
+	return products
+}
+
+func (r *productController) AddProduct(product *models.Products) error {
+	err := r.Repo.Add(product)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
