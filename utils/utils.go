@@ -1,6 +1,8 @@
 package utils
 
-import "log"
+import (
+	"log"
+)
 
 //Checker for check error and panic
 func Checker(err error) {

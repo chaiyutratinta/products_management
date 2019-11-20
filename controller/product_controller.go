@@ -9,6 +9,7 @@ import (
 type ProductController interface {
 	GetAllProduct() *[]models.Products
 	AddProduct(*models.Products) error
+	DeleteProduct(*string) error
 }
 
 //ProductsUseCase ...
@@ -36,6 +37,16 @@ func (r *productController) GetAllProduct() *[]models.Products {
 
 func (r *productController) AddProduct(product *models.Products) error {
 	err := r.Repo.Add(product)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *productController) DeleteProduct(id *string) error {
+	err := r.Repo.Delete(id)
 
 	if err != nil {
 		return err

@@ -16,6 +16,7 @@ import (
 type Client interface {
 	GetAll() (*[]models.Products, error)
 	Add(*models.Products) error
+	Delete(*string) error
 }
 
 type dataBase struct {
@@ -69,6 +70,17 @@ func (db *dataBase) GetAll() (*[]models.Products, error) {
 func (db *dataBase) Add(product *models.Products) error {
 	collection := db.client.Database("products_management").Collection("products")
 	_, err := collection.InsertOne(context.TODO(), *product)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *dataBase) Delete(id *string) error {
+	collection := db.client.Database("products_management").Collection("products")
+	_, err := collection.DeleteOne(context.TODO(), bson.D{{"id", *id}})
 
 	if err != nil {
 		return err

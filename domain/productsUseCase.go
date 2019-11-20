@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"net/http"
+	"strings"
 
 	"products_management/controller"
 	"products_management/models"
@@ -14,8 +15,9 @@ import (
 
 //ProductUseCase ...
 type ProductUseCase interface {
-	Get(w http.ResponseWriter, r *http.Request)
-	Add(w http.ResponseWriter, r *http.Request)
+	Get(http.ResponseWriter, *http.Request)
+	Add(http.ResponseWriter, *http.Request)
+	Delete(http.ResponseWriter, *http.Request)
 }
 
 type productUseCase struct {
@@ -95,4 +97,15 @@ func (p *productUseCase) Add(writer http.ResponseWriter, req *http.Request) {
 
 	writer.WriteHeader(http.StatusCreated)
 	writer.Write(json)
+}
+
+func (p *productUseCase) Delete(writer http.ResponseWriter, req *http.Request) {
+	id := strings.TrimPrefix(req.URL.Path, "/products/")
+	err := p.UseCase.DeleteProduct(&id)
+
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+	}
+
+	writer.WriteHeader(http.StatusNoContent)
 }
