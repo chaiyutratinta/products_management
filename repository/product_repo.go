@@ -17,6 +17,7 @@ type Client interface {
 	GetAll() (*[]models.Products, error)
 	Add(*models.Products) error
 	Delete(*string) error
+	Update(*string, *bson.D) error
 }
 
 type dataBase struct {
@@ -80,10 +81,23 @@ func (db *dataBase) Add(product *models.Products) error {
 
 func (db *dataBase) Delete(id *string) error {
 	collection := db.client.Database("products_management").Collection("products")
-	_, err := collection.DeleteOne(context.TODO(), bson.D{{"id", *id}})
+	_, err := collection.DeleteOne(context.TODO(), bson.E{"id", *id})
 
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (db *dataBase) Update(id *string, update *bson.D) error {
+	collection := db.client.Database("products_management").Collection("products")
+	filter := bson.D{{"id", *id}}
+
+	_, err := collection.UpdateOne(context.TODO(), filter, update)
+
+	if err != nil {
+		fmt.Println(err)
 	}
 
 	return nil

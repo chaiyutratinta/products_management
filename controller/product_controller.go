@@ -3,6 +3,8 @@ package controller
 import (
 	"products_management/models"
 	"products_management/repository"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 //ProductController ...
@@ -10,6 +12,7 @@ type ProductController interface {
 	GetAllProduct() *[]models.Products
 	AddProduct(*models.Products) error
 	DeleteProduct(*string) error
+	UpdateProduct(*string, *models.Body) error
 }
 
 //ProductsUseCase ...
@@ -47,6 +50,32 @@ func (r *productController) AddProduct(product *models.Products) error {
 
 func (r *productController) DeleteProduct(id *string) error {
 	err := r.Repo.Delete(id)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *productController) UpdateProduct(id *string, body *models.Body) error {
+	fields := &bson.D{}
+
+	if body.Name != "" {
+		*fields = append(*fields, bson.E{"name", body.Name})
+	}
+	if body.Exp != "" {
+		*fields = append(*fields, bson.E{"exp", body.Exp})
+	}
+	if len(body.Category) > 0 {
+		*fields = append(*fields, bson.E{"category", body.Category})
+	}
+	if body.Amount != 0 {
+		*fields = append(*fields, bson.E{"amount", body.Amount})
+	}
+
+	update := bson.D{{"$set", *fields}}
+	err := r.Repo.Update(id, &update)
 
 	if err != nil {
 		return err

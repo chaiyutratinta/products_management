@@ -18,6 +18,7 @@ type ProductUseCase interface {
 	Get(http.ResponseWriter, *http.Request)
 	Add(http.ResponseWriter, *http.Request)
 	Delete(http.ResponseWriter, *http.Request)
+	Edit(http.ResponseWriter, *http.Request)
 }
 
 type productUseCase struct {
@@ -45,15 +46,10 @@ func (p *productUseCase) Get(writer http.ResponseWriter, req *http.Request) {
 
 func (p *productUseCase) Add(writer http.ResponseWriter, req *http.Request) {
 	writer.Header().Set("Content-Type", "application/json")
-	body := struct {
-		Name     string   `json: "name"`
-		Exp      string   `json: "expire_date"`
-		Category []string `json: "category"`
-		Amount   int      `json: amount`
-	}{}
+	body := &models.Body{}
 
 	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&body)
+	err := decoder.Decode(body)
 	utils.Checker(err)
 
 	getError := make(map[string]string)
@@ -102,6 +98,23 @@ func (p *productUseCase) Add(writer http.ResponseWriter, req *http.Request) {
 func (p *productUseCase) Delete(writer http.ResponseWriter, req *http.Request) {
 	id := strings.TrimPrefix(req.URL.Path, "/products/")
 	err := p.UseCase.DeleteProduct(&id)
+
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+	}
+
+	writer.WriteHeader(http.StatusNoContent)
+}
+
+func (p *productUseCase) Edit(writer http.ResponseWriter, req *http.Request) {
+	writer.Header().Set("Content-Type", "application/json")
+	id := strings.TrimPrefix(req.URL.Path, "/products/")
+	getBody := &models.Body{}
+
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(getBody)
+	utils.Checker(err)
+	err = p.UseCase.UpdateProduct(&id, getBody)
 
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)

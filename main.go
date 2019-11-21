@@ -43,6 +43,10 @@ func (h handler) ServeHTTP(write http.ResponseWriter, req *http.Request) {
 		return
 	case http.MethodDelete:
 		h.domain.Delete(write, req)
+	case http.MethodPatch:
+		h.domain.Edit(write, req)
+	default:
+		http.NotFound(write, req)
 	}
 }
 
