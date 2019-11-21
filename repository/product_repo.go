@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -39,6 +40,7 @@ func (db *dataBase) GetAll() (*[]models.Products, error) {
 	cur, err := collection.Find(context.TODO(), bson.D{{}})
 
 	if err != nil {
+		log.Fatal(err)
 		return &[]models.Products{}, err
 	}
 
@@ -73,6 +75,8 @@ func (db *dataBase) Add(product *models.Products) error {
 	_, err := collection.InsertOne(context.TODO(), *product)
 
 	if err != nil {
+		log.Fatal(err)
+
 		return err
 	}
 
@@ -81,9 +85,11 @@ func (db *dataBase) Add(product *models.Products) error {
 
 func (db *dataBase) Delete(id *string) error {
 	collection := db.client.Database("products_management").Collection("products")
-	_, err := collection.DeleteOne(context.TODO(), bson.E{"id", *id})
+	_, err := collection.DeleteOne(context.TODO(), bson.D{{"id", *id}})
 
 	if err != nil {
+		log.Fatal(err)
+
 		return err
 	}
 
@@ -97,7 +103,9 @@ func (db *dataBase) Update(id *string, update *bson.D) error {
 	_, err := collection.UpdateOne(context.TODO(), filter, update)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
+
+		return err
 	}
 
 	return nil

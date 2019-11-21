@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	"log"
 	"net/http"
 	"strings"
 
@@ -63,7 +64,7 @@ func (p *productUseCase) Add(writer http.ResponseWriter, req *http.Request) {
 		getError["Amount"] = "Amount at leate 1."
 	}
 
-	if len(getError) != 0 {
+	if len(getError) > 0 {
 		json, _ := json.Marshal(getError)
 		writer.WriteHeader(http.StatusBadRequest)
 		writer.Write(json)
@@ -100,7 +101,10 @@ func (p *productUseCase) Delete(writer http.ResponseWriter, req *http.Request) {
 	err := p.UseCase.DeleteProduct(&id)
 
 	if err != nil {
+		log.Fatal(err)
 		writer.WriteHeader(http.StatusInternalServerError)
+
+		return
 	}
 
 	writer.WriteHeader(http.StatusNoContent)
@@ -117,7 +121,10 @@ func (p *productUseCase) Edit(writer http.ResponseWriter, req *http.Request) {
 	err = p.UseCase.UpdateProduct(&id, getBody)
 
 	if err != nil {
+		log.Fatal(err)
 		writer.WriteHeader(http.StatusInternalServerError)
+
+		return
 	}
 
 	writer.WriteHeader(http.StatusNoContent)

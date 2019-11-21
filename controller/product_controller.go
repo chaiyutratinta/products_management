@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"log"
 	"products_management/models"
 	"products_management/repository"
 
@@ -32,6 +33,8 @@ func (r *productController) GetAllProduct() *[]models.Products {
 	products, err := r.Repo.GetAll()
 
 	if err != nil {
+		log.Fatal(err)
+
 		return &[]models.Products{}
 	}
 
@@ -42,6 +45,8 @@ func (r *productController) AddProduct(product *models.Products) error {
 	err := r.Repo.Add(product)
 
 	if err != nil {
+		log.Fatal(err)
+
 		return err
 	}
 
@@ -52,6 +57,8 @@ func (r *productController) DeleteProduct(id *string) error {
 	err := r.Repo.Delete(id)
 
 	if err != nil {
+		log.Fatal(err)
+
 		return err
 	}
 
@@ -78,6 +85,8 @@ func (r *productController) UpdateProduct(id *string, body *models.Body) error {
 	err := r.Repo.Update(id, &update)
 
 	if err != nil {
+		log.Fatal(err)
+
 		return err
 	}
 
