@@ -86,7 +86,7 @@ func (db *dataBase) Add(product *models.Products) error {
 func (db *dataBase) Delete(id *string) error {
 	collection := db.client.Database("products_management").Collection("products")
 	_, err := collection.DeleteOne(context.TODO(), bson.D{{"id", *id}})
-
+	
 	if err != nil {
 		log.Fatal(err)
 

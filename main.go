@@ -3,59 +3,17 @@ package main
 import (
 	"log"
 	"net/http"
-	"products_management/domain"
-	"strings"
+	"products_management/router"
+	"time"
 )
 
-type Handler interface {
-	ServeHTTP(http.ResponseWriter, *http.Request)
-}
-
-type handler struct {
-	domain domain.ProductUseCase
-}
-
-func (h handler) ServeHTTP(write http.ResponseWriter, req *http.Request) {
-	endpoint := "/products"
-	path := req.URL.Path
-
-	if !strings.HasPrefix(path, endpoint) {
-		write.WriteHeader(http.StatusNotFound)
-
-		return
-	}
-
-	suffix := strings.TrimPrefix(path, endpoint)
-
-	switch req.Method {
-	case http.MethodGet:
-		if suffix != "" {
-			http.NotFound(write, req)
-			return
-		}
-		h.domain.Get(write, req)
-	case http.MethodPost:
-		if suffix != "" {
-			http.NotFound(write, req)
-			return
-		}
-		h.domain.Add(write, req)
-		return
-	case http.MethodDelete:
-		h.domain.Delete(write, req)
-	case http.MethodPatch:
-		h.domain.Edit(write, req)
-	default:
-		http.NotFound(write, req)
-	}
-}
-
 func main() {
+	router := router.NewRouter()
 	server := &http.Server{
-		Addr: ":8080",
-		Handler: handler{
-			domain: domain.GetProducts(),
-		},
+		Addr:         ":8080",
+		Handler:      router,
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
 	}
 
 	log.Fatal(server.ListenAndServe())

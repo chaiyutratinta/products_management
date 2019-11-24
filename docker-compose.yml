@@ -1,24 +1,24 @@
-version: '3.7'
+version: "3.7"
 
 services:
   mongodb:
     image: mongo
     container_name: products_db
     environment:
-        MONGO_INITDB_DATABASE: products_management
-    ports:  
-        - "27017:27017"
-    networks: 
-        - product_management_network
+      MONGO_INITDB_DATABASE: products_management
+    ports:
+      - "27017"
+    networks:
+      - product_management_network
 
   app:
     build: .
     container_name: products_management
     ports:
-        - "8080:8080"
-    networks: 
-        - product_management_network
+      - "8080:8080"
+    networks:
+      - product_management_network
 
-networks: 
-    product_management_network:
-        driver: bridge
+networks:
+  product_management_network:
+    driver: bridge
