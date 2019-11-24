@@ -20,6 +20,7 @@ type ProductUseCase interface {
 	Add(http.ResponseWriter, *http.Request)
 	Delete(http.ResponseWriter, *http.Request)
 	Edit(http.ResponseWriter, *http.Request)
+	GetDetail(http.ResponseWriter, *http.Request)
 }
 
 type productUseCase struct {
@@ -128,4 +129,21 @@ func (p *productUseCase) Edit(writer http.ResponseWriter, req *http.Request) {
 	}
 
 	writer.WriteHeader(http.StatusNoContent)
+}
+
+func (p *productUseCase) GetDetail(writer http.ResponseWriter, req *http.Request) {
+	writer.Header().Set("Content-Type", "application/json")
+	id := strings.TrimPrefix(req.URL.Path, "/products/")
+	result, err := p.UseCase.GetDetailProduct(&id)
+	json, _ := json.Marshal(*result)
+
+	if err != nil {
+		log.Fatal(err)
+		writer.WriteHeader(http.StatusNotFound)
+		
+		return
+	}
+	
+	writer.WriteHeader(http.StatusOK)
+	writer.Write(json)
 }

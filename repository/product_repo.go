@@ -19,6 +19,7 @@ type Client interface {
 	Add(*models.Products) error
 	Delete(*string) error
 	Update(*string, *bson.D) error
+	GetDetail(*bson.D, *models.Body) error
 }
 
 type dataBase struct {
@@ -27,7 +28,9 @@ type dataBase struct {
 
 //GetDbSession return DB session
 func GetDbSession() Client {
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
+	client, err := mongo.
+			Connect(context.TODO(), options.Client().
+			ApplyURI("mongodb://localhost:27017"))
 	utils.Checker(err)
 
 	return &dataBase{
@@ -36,7 +39,9 @@ func GetDbSession() Client {
 }
 
 func (db *dataBase) GetAll() (*[]models.Products, error) {
-	collection := db.client.Database("products_management").Collection("products")
+	collection := db.client.
+			Database("products_management").
+			Collection("products")
 	cur, err := collection.Find(context.TODO(), bson.D{{}})
 
 	if err != nil {
@@ -71,7 +76,9 @@ func (db *dataBase) GetAll() (*[]models.Products, error) {
 }
 
 func (db *dataBase) Add(product *models.Products) error {
-	collection := db.client.Database("products_management").Collection("products")
+	collection := db.client.
+			Database("products_management").
+			Collection("products")
 	_, err := collection.InsertOne(context.TODO(), *product)
 
 	if err != nil {
@@ -84,9 +91,11 @@ func (db *dataBase) Add(product *models.Products) error {
 }
 
 func (db *dataBase) Delete(id *string) error {
-	collection := db.client.Database("products_management").Collection("products")
+	collection := db.client.
+			Database("products_management").
+			Collection("products")
 	_, err := collection.DeleteOne(context.TODO(), bson.D{{"id", *id}})
-	
+
 	if err != nil {
 		log.Fatal(err)
 
@@ -97,10 +106,29 @@ func (db *dataBase) Delete(id *string) error {
 }
 
 func (db *dataBase) Update(id *string, update *bson.D) error {
-	collection := db.client.Database("products_management").Collection("products")
+	collection := db.client.
+			Database("products_management").
+			Collection("products")
 	filter := bson.D{{"id", *id}}
 
 	_, err := collection.UpdateOne(context.TODO(), filter, update)
+
+	if err != nil {
+		log.Fatal(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func (db *dataBase) GetDetail(filter *bson.D, result *models.Body) error {
+	collection := db.client.
+			Database("products_management").
+			Collection("products")
+	err := collection.
+		FindOne(context.TODO(), filter).
+		Decode(&result)
 
 	if err != nil {
 		log.Fatal(err)

@@ -14,6 +14,7 @@ type ProductController interface {
 	AddProduct(*models.Products) error
 	DeleteProduct(*string) error
 	UpdateProduct(*string, *models.Body) error
+	GetDetailProduct(*string) (*models.Products, error)
 }
 
 //ProductsUseCase ...
@@ -91,4 +92,23 @@ func (r *productController) UpdateProduct(id *string, body *models.Body) error {
 	}
 
 	return nil
+}
+
+func (r *productController) GetDetailProduct(id *string) (*models.Products, error) {
+	filter := bson.D{{"id", *id}}
+	result := &models.Body{}
+	err := r.Repo.GetDetail(&filter, result)
+
+	if err != nil {
+		log.Fatal(err)
+
+		return nil, err
+	}
+
+	return &models.Products{
+		Name: result.Name,
+		Exp: result.Exp,
+		Category: result.Category,
+		Amount: result.Amount,
+	}, nil
 }
