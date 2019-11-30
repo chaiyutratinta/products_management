@@ -21,6 +21,7 @@ type ProductController interface {
 	//insert product category
 	AddProductCategory(*string) error
 	GetProductCategories() (*[]map[string]string, error)
+	DeleteProductCategory(*string) error
 }
 
 //ProductsUseCase ...
@@ -143,4 +144,17 @@ func (r *productController) GetProductCategories() (*[]map[string]string, error)
 	}
 
 	return results, nil
+}
+
+func (r *productController) DeleteProductCategory(id *string) error {
+	sqlCommand := fmt.Sprintf(`DELETE FROM product_category WHERE id='%s'`, *id)
+	err := r.Repo.DeleteProductCategory(&sqlCommand)
+
+	if err != nil {
+		log.Fatal(err)
+
+		return err
+	}
+
+	return nil
 }

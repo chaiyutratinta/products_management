@@ -25,6 +25,7 @@ type ProductUseCase interface {
 	//product category
 	AddProductCategory(http.ResponseWriter, *http.Request)
 	GetProductCategories(http.ResponseWriter, *http.Request)
+	DeleteProductCategory(http.ResponseWriter, *http.Request)
 }
 
 type productUseCase struct {
@@ -190,4 +191,19 @@ func (p *productUseCase) GetProductCategories(writer http.ResponseWriter, req *h
 
 	writer.WriteHeader(http.StatusOK)
 	writer.Write(json)
+}
+
+func (p *productUseCase) DeleteProductCategory(writer http.ResponseWriter, req *http.Request) {
+	writer.Header().Set("Content-Type", "application/json")
+	id := strings.TrimPrefix(req.URL.Path, "/category/")
+	err := p.UseCase.DeleteProductCategory(&id)
+
+	if err != nil {
+		log.Fatal(err)
+		writer.WriteHeader(http.StatusInternalServerError)
+
+		return
+	}
+
+	writer.WriteHeader(http.StatusNoContent)
 }

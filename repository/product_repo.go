@@ -27,6 +27,7 @@ type Client interface {
 	//insert product category
 	AddProtuctCatgegory(*string) error
 	GetProductCategories(*string) (*[]map[string]string, error)
+	DeleteProductCategory(*string) error
 }
 
 type dataBase struct {
@@ -175,6 +176,7 @@ func (db *dataBase) AddProtuctCatgegory(sqlCommand *string) error {
 
 func (db *dataBase) GetProductCategories(sqlCommand *string) (*[]map[string]string, error) {
 	rows, err := db.sqlDB.Query(*sqlCommand)
+	defer rows.Close()
 
 	if err != nil {
 		log.Fatal(err)
@@ -194,4 +196,16 @@ func (db *dataBase) GetProductCategories(sqlCommand *string) (*[]map[string]stri
 
 	return results, nil
 
+}
+
+func (db *dataBase) DeleteProductCategory(sqlCommand *string) error {
+	_, err := db.sqlDB.Exec(*sqlCommand)
+
+	if err != nil {
+		log.Fatal(err)
+
+		return err
+	}
+
+	return nil
 }

@@ -21,6 +21,7 @@ func NewRouter() *mux.Router {
 	//insert product category
 	router.HandleFunc("/category", useCase.AddProductCategory).Methods(http.MethodPost)
 	router.HandleFunc("/category", useCase.GetProductCategories).Methods(http.MethodGet)
+	router.HandleFunc("/category/{id}", useCase.DeleteProductCategory).Methods(http.MethodDelete)
 
 	return router
 }
