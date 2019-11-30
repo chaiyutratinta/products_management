@@ -1,10 +1,12 @@
 package controller
 
 import (
+	"fmt"
 	"log"
 	"products_management/models"
 	"products_management/repository"
 
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -15,6 +17,10 @@ type ProductController interface {
 	DeleteProduct(*string) error
 	UpdateProduct(*string, *models.Body) error
 	GetDetailProduct(*string) (*models.Products, error)
+
+	//insert product category
+	AddProductCategory(*string) error
+	GetProductCategories() (*[]map[string]string, error)
 }
 
 //ProductsUseCase ...
@@ -106,9 +112,35 @@ func (r *productController) GetDetailProduct(id *string) (*models.Products, erro
 	}
 
 	return &models.Products{
-		Name: result.Name,
-		Exp: result.Exp,
+		Name:     result.Name,
+		Exp:      result.Exp,
 		Category: result.Category,
-		Amount: result.Amount,
+		Amount:   result.Amount,
 	}, nil
+}
+
+func (r *productController) AddProductCategory(categoryName *string) error {
+	id := (uuid.New()).String()
+	sqlCommand := fmt.Sprintf(`INSERT INTO product_category VALUES('%s', '%s')`, id, *categoryName)
+	err := r.Repo.AddProtuctCatgegory(&sqlCommand)
+
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	return nil
+}
+
+func (r *productController) GetProductCategories() (*[]map[string]string, error) {
+	sqlCommand := `SELECT * FROM product_category`
+	results, err := r.Repo.GetProductCategories(&sqlCommand)
+
+	if err != nil {
+		log.Fatal(err)
+
+		return nil, err
+	}
+
+	return results, nil
 }

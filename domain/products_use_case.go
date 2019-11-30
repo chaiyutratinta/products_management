@@ -21,6 +21,10 @@ type ProductUseCase interface {
 	Delete(http.ResponseWriter, *http.Request)
 	Edit(http.ResponseWriter, *http.Request)
 	GetDetail(http.ResponseWriter, *http.Request)
+
+	//product category
+	AddProductCategory(http.ResponseWriter, *http.Request)
+	GetProductCategories(http.ResponseWriter, *http.Request)
 }
 
 type productUseCase struct {
@@ -29,7 +33,7 @@ type productUseCase struct {
 
 //GetProducts for get all products
 func GetProducts() ProductUseCase {
-	client := repository.GetDbSession()
+	client := repository.GetPostgresSession()
 	controller := controller.NewController(client)
 
 	return &productUseCase{
@@ -144,6 +148,46 @@ func (p *productUseCase) GetDetail(writer http.ResponseWriter, req *http.Request
 		return
 	}
 	
+	writer.WriteHeader(http.StatusOK)
+	writer.Write(json)
+}
+
+func (p *productUseCase) AddProductCategory(writer http.ResponseWriter, req *http.Request) {
+	writer.Header().Set("Content-Type", "application/json")
+
+	getBody := &struct{
+		Name	string	`json: "name"`
+	}{}
+
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(getBody)
+	utils.Checker(err)
+	categoryName := (*getBody).Name
+	err = p.UseCase.AddProductCategory(&categoryName)
+
+	if err != nil {
+		log.Fatal(err)
+		writer.WriteHeader(http.StatusNotFound)
+
+		return
+	}
+
+	writer.WriteHeader(http.StatusOK)
+}
+
+func (p *productUseCase) GetProductCategories(writer http.ResponseWriter, req *http.Request) {
+	writer.Header().Set("Content-Type", "application/json")
+
+	results, err := p.UseCase.GetProductCategories()
+	json, err := json.Marshal(*results)
+
+	if err != nil {
+		log.Fatal(err)
+		writer.WriteHeader(http.StatusInternalServerError)
+
+		return
+	}
+
 	writer.WriteHeader(http.StatusOK)
 	writer.Write(json)
 }
