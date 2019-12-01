@@ -7,50 +7,52 @@ import (
 	"products_management/repository"
 
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 //ProductController ...
 type ProductController interface {
-	GetAllProduct() *[]models.Products
+	// GetAllProduct() *[]models.Products
 	AddProduct(*models.Products) error
-	DeleteProduct(*string) error
-	UpdateProduct(*string, *models.Body) error
-	GetDetailProduct(*string) (*models.Products, error)
+	// DeleteProduct(*string) error
+	// UpdateProduct(*string, *models.Body) error
+	// GetDetailProduct(*string) (*models.Products, error)
 
 	//insert product category
-	AddProductCategory(*string) error
-	GetProductCategories() (*[]map[string]string, error)
-	DeleteProductCategory(*string) error
+	InsertProductCategory(*string) error
+	SelectAllProductCategories() (*[]map[string]string, error)
+	RemoveProductCategory(*string) error
+	IsCategoryMatch(*string) bool
 }
 
 //ProductsUseCase ...
 type productController struct {
-	Repo repository.Client
+	repository.DB
 }
 
 //NewController ...
-func NewController(r repository.Client) ProductController {
+func NewController(db repository.DB) ProductController {
 
-	return &productController{
-		Repo: r,
-	}
+	return &productController{db}
 }
 
-func (r *productController) GetAllProduct() *[]models.Products {
-	products, err := r.Repo.GetAll()
+// func (r *productController) GetAllProduct() *[]models.Products {
+// 	products, err := r.GetAll()
 
-	if err != nil {
-		log.Fatal(err)
+// 	if err != nil {
+// 		log.Fatal(err)
 
-		return &[]models.Products{}
-	}
+// 		return &[]models.Products{}
+// 	}
 
-	return products
-}
+// 	return products
+// }
 
 func (r *productController) AddProduct(product *models.Products) error {
-	err := r.Repo.Add(product)
+	sqlCommand := fmt.Sprintf(`
+				INSERT INTO product(id, product_name, amount, price, expire, category_id)
+				VALUES('%s', '%s', %d, %d, '%s', '%s')
+				`, product.ID, product.Name, product.Amount, product.Price, product.Exp, product.Category)
+	err := r.Execute(&sqlCommand)
 
 	if err != nil {
 		log.Fatal(err)
@@ -61,69 +63,69 @@ func (r *productController) AddProduct(product *models.Products) error {
 	return nil
 }
 
-func (r *productController) DeleteProduct(id *string) error {
-	err := r.Repo.Delete(id)
+// func (r *productController) DeleteProduct(id *string) error {
+// 	err := r.Delete(id)
 
-	if err != nil {
-		log.Fatal(err)
+// 	if err != nil {
+// 		log.Fatal(err)
 
-		return err
-	}
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func (r *productController) UpdateProduct(id *string, body *models.Body) error {
-	fields := &bson.D{}
+// func (r *productController) UpdateProduct(id *string, body *models.Body) error {
+// 	fields := &bson.D{}
 
-	if body.Name != "" {
-		*fields = append(*fields, bson.E{"name", body.Name})
-	}
-	if body.Exp != "" {
-		*fields = append(*fields, bson.E{"exp", body.Exp})
-	}
-	if len(body.Category) > 0 {
-		*fields = append(*fields, bson.E{"category", body.Category})
-	}
-	if body.Amount != 0 {
-		*fields = append(*fields, bson.E{"amount", body.Amount})
-	}
+// 	if body.Name != "" {
+// 		*fields = append(*fields, bson.E{"name", body.Name})
+// 	}
+// 	if body.Exp != "" {
+// 		*fields = append(*fields, bson.E{"exp", body.Exp})
+// 	}
+// 	if len(body.Category) > 0 {
+// 		*fields = append(*fields, bson.E{"category", body.Category})
+// 	}
+// 	if body.Amount != 0 {
+// 		*fields = append(*fields, bson.E{"amount", body.Amount})
+// 	}
 
-	update := bson.D{{"$set", *fields}}
-	err := r.Repo.Update(id, &update)
+// 	update := bson.D{{"$set", *fields}}
+// 	err := r.Update(id, &update)
 
-	if err != nil {
-		log.Fatal(err)
+// 	if err != nil {
+// 		log.Fatal(err)
 
-		return err
-	}
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func (r *productController) GetDetailProduct(id *string) (*models.Products, error) {
-	filter := bson.D{{"id", *id}}
-	result := &models.Body{}
-	err := r.Repo.GetDetail(&filter, result)
+// func (r *productController) GetDetailProduct(id *string) (*models.Products, error) {
+// 	filter := bson.D{{"id", *id}}
+// 	result := &models.Body{}
+// 	err := r.GetDetail(&filter, result)
 
-	if err != nil {
-		log.Fatal(err)
+// 	if err != nil {
+// 		log.Fatal(err)
 
-		return nil, err
-	}
+// 		return nil, err
+// 	}
 
-	return &models.Products{
-		Name:     result.Name,
-		Exp:      result.Exp,
-		Category: result.Category,
-		Amount:   result.Amount,
-	}, nil
-}
+// 	return &models.Products{
+// 		Name:     result.Name,
+// 		Exp:      result.Exp,
+// 		Category: result.Category,
+// 		Amount:   result.Amount,
+// 	}, nil
+// }
 
-func (r *productController) AddProductCategory(categoryName *string) error {
+func (r *productController) InsertProductCategory(categoryName *string) error {
 	id := (uuid.New()).String()
 	sqlCommand := fmt.Sprintf(`INSERT INTO product_category VALUES('%s', '%s')`, id, *categoryName)
-	err := r.Repo.AddProtuctCatgegory(&sqlCommand)
+	err := r.Execute(&sqlCommand)
 
 	if err != nil {
 		log.Fatal(err)
@@ -133,9 +135,9 @@ func (r *productController) AddProductCategory(categoryName *string) error {
 	return nil
 }
 
-func (r *productController) GetProductCategories() (*[]map[string]string, error) {
+func (r *productController) SelectAllProductCategories() (*[]map[string]string, error) {
 	sqlCommand := `SELECT * FROM product_category`
-	results, err := r.Repo.GetProductCategories(&sqlCommand)
+	results, err := r.QueryAll(&sqlCommand)
 
 	if err != nil {
 		log.Fatal(err)
@@ -146,9 +148,9 @@ func (r *productController) GetProductCategories() (*[]map[string]string, error)
 	return results, nil
 }
 
-func (r *productController) DeleteProductCategory(id *string) error {
+func (r *productController) RemoveProductCategory(id *string) error {
 	sqlCommand := fmt.Sprintf(`DELETE FROM product_category WHERE id='%s'`, *id)
-	err := r.Repo.DeleteProductCategory(&sqlCommand)
+	err := r.Execute(&sqlCommand)
 
 	if err != nil {
 		log.Fatal(err)
@@ -157,4 +159,19 @@ func (r *productController) DeleteProductCategory(id *string) error {
 	}
 
 	return nil
+}
+
+func (r *productController) IsCategoryMatch(id *string) bool {
+	sqlCommand := fmt.Sprintf(`SELECT EXISTS (SELECT true FROM product_category WHERE id='%s')`, *id)
+	result, err := r.QueryOnce(&sqlCommand)
+
+	if err != nil {
+		log.Fatal(err)
+
+		return false
+	}
+
+	ismatch, _ := result.(bool)
+
+	return ismatch
 }

@@ -10,12 +10,12 @@ CREATE TABLE product_category(
 );
 
 CREATE TABLE product( 
-	id SERIAL PRIMARY KEY NOT NULL, 
+	id VARCHAR PRIMARY KEY NOT NULL, 
 	product_name VARCHAR(50) NOT NULL, 
 	amount	INT NOT NULL, 
 	price INT NOT NULL, 
 	expire VARCHAR(6) NOT NULL, 
-	category_id SERIAL REFERENCES product_category(id)
+	category_id VARCHAR REFERENCES product_category(id)
 );
 
 EOSQL

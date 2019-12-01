@@ -1,24 +1,15 @@
 version: "3.7"
 
 services:
-  mongodb:
-    image: mongo
-    container_name: products_db
-    environment:
-      MONGO_INITDB_DATABASE: products_management
-    ports:
-      - "27017"
-    networks:
-      - product_management_network
-
-  app:
-    build: .
-    container_name: products_management
-    ports:
-      - "8080:8080"
-    networks:
-      - product_management_network
-
-networks:
-  product_management_network:
-    driver: bridge
+        postgres:
+                image: postgres
+                container_name: product_management_db
+                restart: always
+                ports:
+                        - "5432"
+                environment:
+                        POSTGRES_USER: admin
+                        POSTGRES_PASSWORD: nimda
+                        POSTGRES_DB: products
+                volumes:
+                        - "./initial.sh:/docker-entrypoint-initdb.d/initial.sh"
