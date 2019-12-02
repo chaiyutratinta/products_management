@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"log"
+	"products_management/models"
 
 	//postgres driver
 	_ "github.com/lib/pq"
@@ -10,14 +11,14 @@ import (
 
 //DB ...
 type DB interface {
-	// GetAll() (*[]models.Products, error)
 	Execute(*string) error
+	GetProducts(*string) ([]models.Products, error)
 	// Delete(*string) error
 	// Update(*string, *bson.D) error
 	// GetDetail(*bson.D, *models.Body) error
 
 	//insert product category
-	QueryAll(*string) (*[]map[string]string, error)
+	GetCategories(*string) ([]models.Category, error)
 	QueryOnce(*string) (interface{}, error)
 }
 
@@ -27,7 +28,7 @@ type dataBase struct {
 
 //GetPostgresSession for connect postgreSQL
 func GetPostgresSession() DB {
-	connStr := `postgres://admin:nimda@localhost:32773/products?sslmode=disable`
+	connStr := `postgres://admin:nimda@localhost:32769/products?sslmode=disable`
 	db, err := sql.Open("postgres", connStr)
 
 	if err != nil {
@@ -39,42 +40,31 @@ func GetPostgresSession() DB {
 	}
 }
 
-// func (db *dataBase) GetAll() (*[]models.Products, error) {
-// 	collection := db.client.
-// 		Database("products_management").
-// 		Collection("products")
-// 	cur, err := collection.Find(context.TODO(), bson.D{{}})
+func (db *dataBase) GetProducts(sqlCommand *string) ([]models.Products, error) {
+	rows, err := db.sqlDB.Query(*sqlCommand)
 
-// 	if err != nil {
-// 		log.Fatal(err)
-// 		return &[]models.Products{}, err
-// 	}
+	if err != nil {
+		log.Fatal(err)
+		return []models.Products{}, err
+	}
 
-// 	results := &[]models.Products{}
-// 	for cur.Next(context.TODO()) {
-// 		elem := struct {
-// 			ID       string   `bson: "id"`
-// 			Name     string   `bson: "name"`
-// 			Exp      string   `bson: "exp"`
-// 			Category []string `bson: "category"`
-// 			Amount   int      `bson: "amount"`
-// 		}{}
-// 		err := cur.Decode(&elem)
-// 		if err != nil {
-// 			fmt.Println(err)
-// 		}
+	results := []models.Products{}
+	for rows.Next() {
+		var id, name, exp, cat string
+		var amount, price int
+		rows.Scan(&id, &name, &amount, &price, &exp, &cat)
+		results = append(results, models.Products{
+			ID:       id,
+			Name:     name,
+			Exp:      exp,
+			Category: cat,
+			Amount:   amount,
+			Price:    price,
+		})
+	}
 
-// 		*results = append(*results, models.Products{
-// 			ID:       elem.ID,
-// 			Name:     elem.Name,
-// 			Exp:      elem.Exp,
-// 			Category: elem.Category,
-// 			Amount:   elem.Amount,
-// 		})
-// 	}
-
-// 	return results, nil
-// }
+	return results, nil
+}
 
 func (db *dataBase) Execute(sqlCommand *string) error {
 	_, err := db.sqlDB.Exec(*sqlCommand)
@@ -137,7 +127,7 @@ func (db *dataBase) Execute(sqlCommand *string) error {
 // 	return nil
 // }
 
-func (db *dataBase) QueryAll(sqlCommand *string) (*[]map[string]string, error) {
+func (db *dataBase) GetCategories(sqlCommand *string) ([]models.Category, error) {
 	rows, err := db.sqlDB.Query(*sqlCommand)
 	defer rows.Close()
 
@@ -147,14 +137,11 @@ func (db *dataBase) QueryAll(sqlCommand *string) (*[]map[string]string, error) {
 		return nil, err
 	}
 
-	results := &[]map[string]string{}
+	results := []models.Category{}
 	for rows.Next() {
 		var id, name string
 		rows.Scan(&id, &name)
-		*results = append(*results, map[string]string{
-			"id":   id,
-			"name": name,
-		})
+		results = append(results, models.Category{id, name})
 	}
 
 	return results, nil

@@ -17,3 +17,8 @@ type Body struct {
 	Amount   int    `json:"amount"`
 	Price    int    `json:"price"`
 }
+
+type Category struct {
+	ID   string
+	Name string
+}

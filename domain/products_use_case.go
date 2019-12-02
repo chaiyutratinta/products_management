@@ -6,18 +6,19 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/google/uuid"
 	"products_management/constance"
 	"products_management/controller"
 	"products_management/domain/validation"
 	"products_management/models"
 	"products_management/repository"
 	"products_management/utils"
+
+	"github.com/google/uuid"
 )
 
 //ProductUseCase ...
 type ProductUseCase interface {
-	// Get(http.ResponseWriter, *http.Request)
+	Get(http.ResponseWriter, *http.Request)
 	Add(http.ResponseWriter, *http.Request)
 	// Delete(http.ResponseWriter, *http.Request)
 	// Edit(http.ResponseWriter, *http.Request)
@@ -41,14 +42,14 @@ func GetProducts() ProductUseCase {
 	return &productUseCase{controller}
 }
 
-// func (p *productUseCase) Get(writer http.ResponseWriter, req *http.Request) {
-// 	writer.Header().Set("Content-Type", "application/json")
-// 	products := p.GetAllProduct()
-// 	json, _ := json.Marshal(*products)
+func (p *productUseCase) Get(writer http.ResponseWriter, req *http.Request) {
+	writer.Header().Set("Content-Type", "application/json")
+	products := p.GetAllProduct()
+	json, _ := json.Marshal(products)
 
-// 	writer.WriteHeader(http.StatusOK)
-// 	writer.Write(json)
-// }
+	writer.WriteHeader(http.StatusOK)
+	writer.Write(json)
+}
 
 func (p *productUseCase) Add(writer http.ResponseWriter, req *http.Request) {
 	writer.Header().Set("Content-Type", "application/json")
@@ -230,7 +231,7 @@ func (p *productUseCase) GetProductCategories(writer http.ResponseWriter, req *h
 	writer.Header().Set("Content-Type", "application/json")
 
 	results, err := p.SelectAllProductCategories()
-	json, err := json.Marshal(*results)
+	json, err := json.Marshal(results)
 
 	if err != nil {
 		log.Fatal(err)
