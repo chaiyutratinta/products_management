@@ -11,7 +11,7 @@ import (
 
 //DB ...
 type DB interface {
-	Execute(*string) error
+	Execute(*models.Products) error
 	GetProducts(*string) ([]models.Products, error)
 	// Delete(*string) error
 	// Update(*string, *bson.D) error
@@ -28,7 +28,7 @@ type dataBase struct {
 
 //GetPostgresSession for connect postgreSQL
 func GetPostgresSession() DB {
-	connStr := `postgres://admin:nimda@localhost:32769/products?sslmode=disable`
+	connStr := `postgres://admin:nimda@localhost:32784/products?sslmode=disable`
 	db, err := sql.Open("postgres", connStr)
 
 	if err != nil {
@@ -42,6 +42,7 @@ func GetPostgresSession() DB {
 
 func (db *dataBase) GetProducts(sqlCommand *string) ([]models.Products, error) {
 	rows, err := db.sqlDB.Query(*sqlCommand)
+	defer rows.Close()
 
 	if err != nil {
 		log.Fatal(err)
@@ -52,7 +53,7 @@ func (db *dataBase) GetProducts(sqlCommand *string) ([]models.Products, error) {
 	for rows.Next() {
 		var id, name, exp, cat string
 		var amount, price int
-		rows.Scan(&id, &name, &amount, &price, &exp, &cat)
+		rows.Scan(&id, &name, &amount, &exp, &price, &cat)
 		results = append(results, models.Products{
 			ID:       id,
 			Name:     name,
@@ -66,12 +67,17 @@ func (db *dataBase) GetProducts(sqlCommand *string) ([]models.Products, error) {
 	return results, nil
 }
 
-func (db *dataBase) Execute(sqlCommand *string) error {
-	_, err := db.sqlDB.Exec(*sqlCommand)
+func (db *dataBase) Execute(product *models.Products) error {
+	stmt, err := db.sqlDB.Prepare("INSERT INTO product(id, product_name, amount, price, expire, category_id) VALUES(($1), ($2), ($3), ($4), ($5), ($6))")
+	defer stmt.Close()
 
 	if err != nil {
 		log.Fatal(err)
 
+		return err
+	}
+
+	if _, err := stmt.Exec(product.ID, product.Name, product.Amount, product.Price, product.Exp, product.Category); err != nil {
 		return err
 	}
 

@@ -36,7 +36,12 @@ func NewController(db repository.DB) ProductController {
 }
 
 func (r *productController) GetAllProduct() []models.Products {
-	sqlCommand := fmt.Sprintf("SELECT * FROM product")
+	sqlCommand := fmt.Sprintf(`
+		SELECT product.id, product.product_name, product.amount, product.expire, product.price, product_category.category_name  
+		FROM product
+		LEFT JOIN product_category
+		ON product.category_id = product_category.id
+	`)
 	products, err := r.GetProducts(&sqlCommand)
 
 	if err != nil {
@@ -49,11 +54,7 @@ func (r *productController) GetAllProduct() []models.Products {
 }
 
 func (r *productController) AddProduct(product *models.Products) error {
-	sqlCommand := fmt.Sprintf(`
-				INSERT INTO product(id, product_name, amount, price, expire, category_id)
-				VALUES('%s', '%s', %d, %d, '%s', '%s')
-				`, product.ID, product.Name, product.Amount, product.Price, product.Exp, product.Category)
-	err := r.Execute(&sqlCommand)
+	err := r.Execute(product)
 
 	if err != nil {
 		log.Fatal(err)
@@ -126,12 +127,12 @@ func (r *productController) AddProduct(product *models.Products) error {
 func (r *productController) InsertProductCategory(categoryName *string) error {
 	id := (uuid.New()).String()
 	sqlCommand := fmt.Sprintf(`INSERT INTO product_category VALUES('%s', '%s')`, id, *categoryName)
-	err := r.Execute(&sqlCommand)
-
-	if err != nil {
-		log.Fatal(err)
-		return err
-	}
+	//	err := r.Execute(&sqlCommand)
+	fmt.Println(sqlCommand)
+	//if err != nil {
+	//	log.Fatal(err)
+	//	return err
+	//}
 
 	return nil
 }
@@ -148,10 +149,9 @@ func (r *productController) SelectAllProductCategories() ([]map[string]string, e
 
 	categories := []map[string]string{}
 	for _, elm := range results {
-		elmStruct := elm.(models.Category)
 		categories = append(categories, map[string]string{
-			"id":   elmStruct.ID,
-			"name": elmStruct.Name,
+			"id":   elm.ID,
+			"name": elm.Name,
 		})
 	}
 
@@ -160,13 +160,14 @@ func (r *productController) SelectAllProductCategories() ([]map[string]string, e
 
 func (r *productController) RemoveProductCategory(id *string) error {
 	sqlCommand := fmt.Sprintf(`DELETE FROM product_category WHERE id='%s'`, *id)
-	err := r.Execute(&sqlCommand)
+	//err := r.Execute(&sqlCommand)
 
-	if err != nil {
-		log.Fatal(err)
+	fmt.Println(sqlCommand)
+	//if err != nil {
+	//	log.Fatal(err)
 
-		return err
-	}
+	//	return err
+	//}
 
 	return nil
 }

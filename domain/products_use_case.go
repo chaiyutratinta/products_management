@@ -8,10 +8,10 @@ import (
 
 	"products_management/constance"
 	"products_management/controller"
-	"products_management/domain/validation"
 	"products_management/models"
 	"products_management/repository"
 	"products_management/utils"
+	"products_management/validation"
 
 	"github.com/google/uuid"
 )

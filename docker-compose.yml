@@ -1,20 +1,31 @@
 version: "3.7"
 
 services:
-        postgres:
-                image: postgres
-                container_name: product_management_db
-                restart: always
-                ports:
-                        - "5432"
-                environment:
-                        POSTGRES_USER: admin
-                        POSTGRES_PASSWORD: nimda
-                        POSTGRES_DB: products
-                volumes:
-                        - "./initial.sh:/docker-entrypoint-initdb.d/initial.sh"
-                networks:
-                        - product_management 
+    postgres:
+        image: postgres
+        container_name: product_management_db
+        restart: always
+        ports:
+            - "5432"
+        environment:
+            POSTGRES_USER: admin
+            POSTGRES_PASSWORD: nimda
+            POSTGRES_DB: products
+        volumes:
+            - "./initial.sh:/docker-entrypoint-initdb.d/initial.sh"
+        networks:
+            - product_management 
+    
+    app:
+        build: .
+        image: product_management
+        container_name: product_management_app
+        restart: always
+        ports:
+            - "8080"
+        networks:
+            - product_management
+    
 networks:
-        product_management:
-                external: true
+    product_management:
+        external: true
