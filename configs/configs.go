@@ -21,8 +21,7 @@ type Conf struct {
 
 func getConf() Conf {
 	var confFile string
-
-	if env := os.Getenv("APP_ENV"); env == "production" {
+	if os.Getenv("RUN_MODE") == "production" {
 		confFile = "./prod.yml"
 	} else {
 		confFile = "./dev.yml"

@@ -8,4 +8,4 @@ database:
         user: "admin"
         pass: "nimda"
         name: "products"
-        server: "product_management_db""
+        server: "product_management_db"
