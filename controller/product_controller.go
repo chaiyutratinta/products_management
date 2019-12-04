@@ -127,12 +127,12 @@ func (r *productController) AddProduct(product *models.Products) error {
 func (r *productController) InsertProductCategory(categoryName *string) error {
 	id := (uuid.New()).String()
 	sqlCommand := fmt.Sprintf(`INSERT INTO product_category VALUES('%s', '%s')`, id, *categoryName)
-	//	err := r.Execute(&sqlCommand)
-	fmt.Println(sqlCommand)
-	//if err != nil {
-	//	log.Fatal(err)
-	//	return err
-	//}
+	err := r.Execute(&sqlCommand)
+
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
 
 	return nil
 }

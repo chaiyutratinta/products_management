@@ -1,0 +1,11 @@
+# Server configurations
+server:
+        host: "localhost"
+        port: 8080
+
+# Database credentials
+database:
+        user: "admin"
+        pass: "nimda"
+        name: "products"
+        server: "localhost:32768"

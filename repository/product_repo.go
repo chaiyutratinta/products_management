@@ -2,7 +2,9 @@ package repository
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
+	"products_management/configs"
 	"products_management/models"
 
 	//postgres driver
@@ -28,7 +30,8 @@ type dataBase struct {
 
 //GetPostgresSession for connect postgreSQL
 func GetPostgresSession() DB {
-	connStr := `postgres://admin:nimda@localhost:32784/products?sslmode=disable`
+	conf := configs.Config.Database
+	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", conf.Username, conf.Password, conf.Server, conf.DatabaseName)
 	db, err := sql.Open("postgres", connStr)
 
 	if err != nil {
