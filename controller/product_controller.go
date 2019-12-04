@@ -54,7 +54,7 @@ func (r *productController) GetAllProduct() []models.Products {
 }
 
 func (r *productController) AddProduct(product *models.Products) error {
-	err := r.Execute(product)
+	err := r.InsertProduct(product)
 
 	if err != nil {
 		log.Fatal(err)
@@ -126,8 +126,7 @@ func (r *productController) AddProduct(product *models.Products) error {
 
 func (r *productController) InsertProductCategory(categoryName *string) error {
 	id := (uuid.New()).String()
-	sqlCommand := fmt.Sprintf(`INSERT INTO product_category VALUES('%s', '%s')`, id, *categoryName)
-	err := r.Execute(&sqlCommand)
+	err := r.InsertCategory(&id, categoryName)
 
 	if err != nil {
 		log.Fatal(err)
@@ -159,15 +158,13 @@ func (r *productController) SelectAllProductCategories() ([]map[string]string, e
 }
 
 func (r *productController) RemoveProductCategory(id *string) error {
-	sqlCommand := fmt.Sprintf(`DELETE FROM product_category WHERE id='%s'`, *id)
-	//err := r.Execute(&sqlCommand)
+	err := r.DeleteCategory(id)
 
-	fmt.Println(sqlCommand)
-	//if err != nil {
-	//	log.Fatal(err)
+	if err != nil {
+		log.Fatal(err)
 
-	//	return err
-	//}
+		return err
+	}
 
 	return nil
 }

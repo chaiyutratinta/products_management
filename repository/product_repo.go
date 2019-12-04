@@ -13,7 +13,7 @@ import (
 
 //DB ...
 type DB interface {
-	Execute(*models.Products) error
+	InsertProduct(*models.Products) error
 	GetProducts(*string) ([]models.Products, error)
 	// Delete(*string) error
 	// Update(*string, *bson.D) error
@@ -22,6 +22,8 @@ type DB interface {
 	//insert product category
 	GetCategories(*string) ([]models.Category, error)
 	QueryOnce(*string) (interface{}, error)
+	InsertCategory(*string, *string) error
+	DeleteCategory(*string) error
 }
 
 type dataBase struct {
@@ -70,7 +72,7 @@ func (db *dataBase) GetProducts(sqlCommand *string) ([]models.Products, error) {
 	return results, nil
 }
 
-func (db *dataBase) Execute(product *models.Products) error {
+func (db *dataBase) InsertProduct(product *models.Products) error {
 	stmt, err := db.sqlDB.Prepare("INSERT INTO product(id, product_name, amount, price, expire, category_id) VALUES(($1), ($2), ($3), ($4), ($5), ($6))")
 	defer stmt.Close()
 
@@ -150,7 +152,10 @@ func (db *dataBase) GetCategories(sqlCommand *string) ([]models.Category, error)
 	for rows.Next() {
 		var id, name string
 		rows.Scan(&id, &name)
-		results = append(results, models.Category{id, name})
+		results = append(results, models.Category{
+			ID:   id,
+			Name: name,
+		})
 	}
 
 	return results, nil
@@ -173,4 +178,35 @@ func (db *dataBase) QueryOnce(sqlCommand *string) (interface{}, error) {
 	}
 
 	return result, nil
+}
+
+func (db *dataBase) InsertCategory(id, categoryName *string) error {
+	stmt, err := db.sqlDB.Prepare("INSERT INTO product_category VALUES(($1), ($2))")
+	defer stmt.Close()
+
+	if err != nil {
+		log.Fatal(err)
+
+		return err
+	}
+
+	if _, err := stmt.Exec(*id, *categoryName); err != nil {
+		log.Fatal(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func (db *dataBase) DeleteCategory(id *string) error {
+	_, err := db.sqlDB.Exec("DELETE FROM product_category WHERE id=($1)", *id)
+
+	if err != nil {
+		log.Fatal(err)
+
+		return err
+	}
+
+	return nil
 }

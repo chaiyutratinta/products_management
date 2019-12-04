@@ -8,4 +8,4 @@ database:
         user: "admin"
         pass: "nimda"
         name: "products"
-        server: "localhost:32768"
+        server: "localhost:32769"
