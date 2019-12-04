@@ -15,9 +15,9 @@ import (
 type DB interface {
 	InsertProduct(*models.Products) error
 	GetProducts(*string) ([]models.Products, error)
-	// Delete(*string) error
-	// Update(*string, *bson.D) error
-	// GetDetail(*bson.D, *models.Body) error
+	Delete(*string) error
+	Update(*string, *string) error
+	GetDetail(*string) (*models.Products, error)
 
 	//insert product category
 	GetCategories(*string) ([]models.Category, error)
@@ -89,54 +89,66 @@ func (db *dataBase) InsertProduct(product *models.Products) error {
 	return nil
 }
 
-// func (db *dataBase) Delete(id *string) error {
-// 	collection := db.client.
-// 		Database("products_management").
-// 		Collection("products")
-// 	_, err := collection.DeleteOne(context.TODO(), bson.D{{"id", *id}})
+func (db *dataBase) Delete(id *string) error {
+	_, err := db.sqlDB.Exec("DELETE FROM product WHERE id=($1)", *id)
 
-// 	if err != nil {
-// 		log.Fatal(err)
+	if err != nil {
+		log.Fatal(err)
 
-// 		return err
-// 	}
+		return err
+	}
 
-// 	return nil
-// }
+	return nil
+}
 
-// func (db *dataBase) Update(id *string, update *bson.D) error {
-// 	collection := db.client.
-// 		Database("products_management").
-// 		Collection("products")
-// 	filter := bson.D{{"id", *id}}
+func (db *dataBase) Update(id, update *string) error {
+	sqlCommand := fmt.Sprintf("UPDATE product SET %s WHERE id='%s'", *update, *id)
+	stmt, err := db.sqlDB.Prepare(sqlCommand)
+	defer stmt.Close()
 
-// 	_, err := collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		log.Fatal(err)
 
-// 	if err != nil {
-// 		log.Fatal(err)
+		return err
+	}
 
-// 		return err
-// 	}
+	if _, err := stmt.Exec(); err != nil {
+		log.Fatal(err)
 
-// 	return nil
-// }
+		return err
+	}
 
-// func (db *dataBase) GetDetail(filter *bson.D, result *models.Body) error {
-// 	collection := db.client.
-// 		Database("products_management").
-// 		Collection("products")
-// 	err := collection.
-// 		FindOne(context.TODO(), filter).
-// 		Decode(&result)
+	return nil
+}
 
-// 	if err != nil {
-// 		log.Fatal(err)
+func (db *dataBase) GetDetail(id *string) (*models.Products, error) {
+	row := db.sqlDB.QueryRow(`
+		SELECT product.id, product.product_name, product.amount, product.expire, product.price, product_category.category_name
+		FROM product
+		LEFT JOIN product_category
+		ON product.category_id = product_category.id
+		WHERE product.id = ($1)
+		LIMIT 1
+	`, *id)
 
-// 		return err
-// 	}
+	var pid, name, exp, cat string
+	var amount, price int
 
-// 	return nil
-// }
+	if err := row.Scan(&pid, &name, &amount, &exp, &price, &cat); err != nil {
+		return &models.Products{}, err
+	}
+
+	results := models.Products{
+		ID:       pid,
+		Name:     name,
+		Exp:      exp,
+		Category: cat,
+		Amount:   amount,
+		Price:    price,
+	}
+
+	return &results, nil
+}
 
 func (db *dataBase) GetCategories(sqlCommand *string) ([]models.Category, error) {
 	rows, err := db.sqlDB.Query(*sqlCommand)

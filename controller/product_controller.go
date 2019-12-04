@@ -5,7 +5,10 @@ import (
 	"log"
 	"products_management/models"
 	"products_management/repository"
+	"reflect"
+	"strings"
 
+	"github.com/go-playground/validator"
 	"github.com/google/uuid"
 )
 
@@ -13,9 +16,9 @@ import (
 type ProductController interface {
 	GetAllProduct() []models.Products
 	AddProduct(*models.Products) error
-	// DeleteProduct(*string) error
-	// UpdateProduct(*string, *models.Body) error
-	// GetDetailProduct(*string) (*models.Products, error)
+	DeleteProduct(*string) error
+	UpdateProduct(*string, *models.Body) error
+	GetDetailProduct(*string) (*models.Products, error)
 
 	//insert product category
 	InsertProductCategory(*string) error
@@ -65,64 +68,89 @@ func (r *productController) AddProduct(product *models.Products) error {
 	return nil
 }
 
-// func (r *productController) DeleteProduct(id *string) error {
-// 	err := r.Delete(id)
+func (r *productController) DeleteProduct(id *string) error {
+	err := r.Delete(id)
 
-// 	if err != nil {
-// 		log.Fatal(err)
+	if err != nil {
+		log.Fatal(err)
 
-// 		return err
-// 	}
+		return err
 
-// 	return nil
-// }
+	}
 
-// func (r *productController) UpdateProduct(id *string, body *models.Body) error {
-// 	fields := &bson.D{}
+	return nil
+}
 
-// 	if body.Name != "" {
-// 		*fields = append(*fields, bson.E{"name", body.Name})
-// 	}
-// 	if body.Exp != "" {
-// 		*fields = append(*fields, bson.E{"exp", body.Exp})
-// 	}
-// 	if len(body.Category) > 0 {
-// 		*fields = append(*fields, bson.E{"category", body.Category})
-// 	}
-// 	if body.Amount != 0 {
-// 		*fields = append(*fields, bson.E{"amount", body.Amount})
-// 	}
+func (r *productController) UpdateProduct(id *string, body *models.Body) error {
+	validateBody := &struct {
+		Name     string `validate:"required"`
+		Exp      string `validate:"required,len=6"`
+		Category string `validate:"required"`
+		Amount   int    `validate:"min=1"`
+		Price    int    `validate:"min=1"`
+	}{
+		Name:     body.Name,
+		Exp:      body.Exp,
+		Category: body.Category,
+		Amount:   body.Amount,
+		Price:    body.Price,
+	}
+	mapFiledColumn := map[string]string{
+		"Name":     "product_name",
+		"Exp":      "expire",
+		"Category": "category_id",
+		"Amount":   "amount",
+		"Price":    "price",
+	}
 
-// 	update := bson.D{{"$set", *fields}}
-// 	err := r.Update(id, &update)
+	category := validateBody.Category
+	if category != "" {
+		if ok := r.IsCategoryMatch(&category); !ok {
 
-// 	if err != nil {
-// 		log.Fatal(err)
+			return fmt.Errorf("category not match.")
+		}
+	}
 
-// 		return err
-// 	}
+	validate := validator.New()
+	errors := validate.Struct(validateBody)
 
-// 	return nil
-// }
+	for _, elm := range errors.(validator.ValidationErrors) {
+		delete(mapFiledColumn, elm.Field())
+	}
 
-// func (r *productController) GetDetailProduct(id *string) (*models.Products, error) {
-// 	filter := bson.D{{"id", *id}}
-// 	result := &models.Body{}
-// 	err := r.GetDetail(&filter, result)
+	var valPair []string
 
-// 	if err != nil {
-// 		log.Fatal(err)
+	val := reflect.ValueOf(body).Elem()
+	for i := 0; i < val.NumField(); i++ {
+		key := val.Type().Field(i).Name
+		value := val.Field(i).Interface()
 
-// 		return nil, err
-// 	}
+		if v, ok := mapFiledColumn[key]; ok {
+			valPair = append(valPair, fmt.Sprintf("%s=%v", v, value))
+		}
+	}
 
-// 	return &models.Products{
-// 		Name:     result.Name,
-// 		Exp:      result.Exp,
-// 		Category: result.Category,
-// 		Amount:   result.Amount,
-// 	}, nil
-// }
+	updateStr := strings.Join(valPair, ", ")
+	if err := r.Update(id, &updateStr); err != nil {
+		log.Fatal(err)
+
+		return err
+	}
+
+	return nil
+}
+
+func (r *productController) GetDetailProduct(id *string) (*models.Products, error) {
+	result, err := r.GetDetail(id)
+
+	if err != nil {
+		log.Fatal(err)
+
+		return nil, err
+	}
+
+	return result, nil
+}
 
 func (r *productController) InsertProductCategory(categoryName *string) error {
 	id := (uuid.New()).String()

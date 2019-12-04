@@ -17,6 +17,7 @@ type errorMessage struct {
 
 //New for init validator
 func New(errMessage map[string]string) Validator {
+
 	return &errorMessage{
 		errMessage,
 	}
