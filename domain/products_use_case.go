@@ -2,6 +2,7 @@ package domain
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -58,8 +59,9 @@ func (p *productUseCase) Add(writer http.ResponseWriter, req *http.Request) {
 	decoder := json.NewDecoder(req.Body)
 	defer req.Body.Close()
 
-	err := decoder.Decode(body)
-	utils.Checker(err)
+	if err := decoder.Decode(body); err != nil {
+		log.Println(err)
+	}
 
 	validateBody := &struct {
 		Name     string `validate:"required"`
@@ -99,7 +101,8 @@ func (p *productUseCase) Add(writer http.ResponseWriter, req *http.Request) {
 		Price:    body.Price,
 	}
 
-	if err = p.AddProduct(product); err != nil {
+	if err := p.AddProduct(product); err != nil {
+		log.Println(err)
 		writer.WriteHeader(http.StatusInternalServerError)
 
 		return
@@ -128,20 +131,44 @@ func (p *productUseCase) Edit(writer http.ResponseWriter, req *http.Request) {
 	writer.Header().Set("Content-Type", "application/json")
 	id := strings.TrimPrefix(req.URL.Path, "/products/")
 	getBody := &models.Body{}
+	defer req.Body.Close()
 
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(getBody)
-	utils.Checker(err)
-	err = p.UpdateProduct(&id, getBody)
 
 	if err != nil {
-		log.Fatal(err)
-		writer.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
+		fmt.Println(err.Error())
+		writer.WriteHeader(http.StatusBadRequest)
 
 		return
 	}
 
+	err = p.UpdateProduct(&id, getBody)
+
+	if err != nil {
+		switch err.Error() {
+		case "category not match.", "bad request.":
+			{
+				log.Println(err)
+				writer.WriteHeader(http.StatusBadRequest)
+
+				return
+			}
+
+		default:
+			{
+				log.Println(err)
+				writer.WriteHeader(http.StatusInternalServerError)
+
+				return
+			}
+		}
+	}
+
 	writer.WriteHeader(http.StatusNoContent)
+
+	return
 }
 
 func (p *productUseCase) GetDetail(writer http.ResponseWriter, req *http.Request) {

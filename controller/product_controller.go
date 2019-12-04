@@ -102,8 +102,8 @@ func (r *productController) UpdateProduct(id *string, body *models.Body) error {
 		"Amount":   "amount",
 		"Price":    "price",
 	}
-
 	category := validateBody.Category
+
 	if category != "" {
 		if ok := r.IsCategoryMatch(&category); !ok {
 
@@ -112,25 +112,31 @@ func (r *productController) UpdateProduct(id *string, body *models.Body) error {
 	}
 
 	validate := validator.New()
-	errors := validate.Struct(validateBody)
+	errors := validate.Struct(validateBody).(validator.ValidationErrors)
 
-	for _, elm := range errors.(validator.ValidationErrors) {
+	for _, elm := range errors {
 		delete(mapFiledColumn, elm.Field())
 	}
 
+	val := reflect.ValueOf(body).Elem()
 	var valPair []string
 
-	val := reflect.ValueOf(body).Elem()
+	if len(errors) == val.NumField() {
+
+		return fmt.Errorf("bad request.")
+	}
+
 	for i := 0; i < val.NumField(); i++ {
 		key := val.Type().Field(i).Name
 		value := val.Field(i).Interface()
 
 		if v, ok := mapFiledColumn[key]; ok {
-			valPair = append(valPair, fmt.Sprintf("%s=%v", v, value))
+			valPair = append(valPair, fmt.Sprintf("%s='%v'", v, value))
 		}
 	}
 
 	updateStr := strings.Join(valPair, ", ")
+
 	if err := r.Update(id, &updateStr); err != nil {
 		log.Fatal(err)
 
