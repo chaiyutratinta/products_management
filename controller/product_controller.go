@@ -3,22 +3,24 @@ package controller
 import (
 	"fmt"
 	"log"
-	"products_management/models"
-	"products_management/repository"
 	"reflect"
 	"strings"
 
 	"github.com/go-playground/validator"
 	"github.com/google/uuid"
+
+	"products_management/constance"
+	"products_management/models"
+	"products_management/repository"
 )
 
 //ProductController ...
 type ProductController interface {
-	GetAllProduct() []models.Products
+	GetAllProduct() *models.ProductResult
 	AddProduct(*models.Products) error
 	DeleteProduct(*string) error
-	UpdateProduct(*string, *models.Body) error
-	GetDetailProduct(*string) (*models.Products, error)
+	UpdateProduct(*string, *models.Body) (*map[string]string, error)
+	GetDetailProduct(*string) (*models.ProductDetail, error)
 
 	//insert product category
 	InsertProductCategory(*string) error
@@ -38,19 +40,13 @@ func NewController(db repository.DB) ProductController {
 	return &productController{db}
 }
 
-func (r *productController) GetAllProduct() []models.Products {
-	sqlCommand := fmt.Sprintf(`
-		SELECT product.id, product.product_name, product.amount, product.expire, product.price, product_category.category_name  
-		FROM product
-		LEFT JOIN product_category
-		ON product.category_id = product_category.id
-	`)
-	products, err := r.GetProducts(&sqlCommand)
+func (r *productController) GetAllProduct() *models.ProductResult {
+	products, err := r.GetProducts()
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 
-		return []models.Products{}
+		return &models.ProductResult{}
 	}
 
 	return products
@@ -60,7 +56,7 @@ func (r *productController) AddProduct(product *models.Products) error {
 	err := r.InsertProduct(product)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 
 		return err
 	}
@@ -72,7 +68,7 @@ func (r *productController) DeleteProduct(id *string) error {
 	err := r.Delete(id)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 
 		return err
 
@@ -81,13 +77,13 @@ func (r *productController) DeleteProduct(id *string) error {
 	return nil
 }
 
-func (r *productController) UpdateProduct(id *string, body *models.Body) error {
+func (r *productController) UpdateProduct(id *string, body *models.Body) (*map[string]string, error) {
 	validateBody := &struct {
 		Name     string `validate:"required"`
-		Exp      string `validate:"required,len=6"`
+		Exp      string `validate:"required,len=0|len=6"`
 		Category string `validate:"required"`
-		Amount   int    `validate:"min=1"`
-		Price    int    `validate:"min=1"`
+		Amount   int    `validate:"required,number,min=1"`
+		Price    int    `validate:"required,number,min=1"`
 	}{
 		Name:     body.Name,
 		Exp:      body.Exp,
@@ -103,30 +99,36 @@ func (r *productController) UpdateProduct(id *string, body *models.Body) error {
 		"Price":    "price",
 	}
 	category := validateBody.Category
+	requestErrors := make(map[string]string)
 
-	if category != "" {
-		if ok := r.IsCategoryMatch(&category); !ok {
-
-			return fmt.Errorf("category not match.")
-		}
+	if category != "" && !r.IsCategoryMatch(&category) {
+		requestErrors["category"] = "category not match."
 	}
 
 	validate := validator.New()
 	errors := validate.Struct(validateBody).(validator.ValidationErrors)
 
 	for _, elm := range errors {
-		delete(mapFiledColumn, elm.Field())
+		field := elm.Field()
+		tag := elm.ActualTag()
+
+		if tag == "required" {
+			delete(mapFiledColumn, field)
+		} else {
+			requestErrors[mapFiledColumn[field]] = constance.RequestErrors[fmt.Sprintf("%s.%s", field, tag)]
+		}
 	}
 
 	val := reflect.ValueOf(body).Elem()
 	var valPair []string
+	numField := val.NumField()
 
-	if len(errors) == val.NumField() {
+	if len(requestErrors) > 0 || len(errors) == numField {
 
-		return fmt.Errorf("bad request.")
+		return &requestErrors, fmt.Errorf("bad request.")
 	}
 
-	for i := 0; i < val.NumField(); i++ {
+	for i := 0; i < numField; i++ {
 		key := val.Type().Field(i).Name
 		value := val.Field(i).Interface()
 
@@ -138,19 +140,19 @@ func (r *productController) UpdateProduct(id *string, body *models.Body) error {
 	updateStr := strings.Join(valPair, ", ")
 
 	if err := r.Update(id, &updateStr); err != nil {
-		log.Fatal(err)
+		log.Println(err)
 
-		return err
+		return &requestErrors, err
 	}
 
-	return nil
+	return &requestErrors, nil
 }
 
-func (r *productController) GetDetailProduct(id *string) (*models.Products, error) {
+func (r *productController) GetDetailProduct(id *string) (*models.ProductDetail, error) {
 	result, err := r.GetDetail(id)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 
 		return nil, err
 	}
@@ -163,7 +165,7 @@ func (r *productController) InsertProductCategory(categoryName *string) error {
 	err := r.InsertCategory(&id, categoryName)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return err
 	}
 
@@ -171,11 +173,10 @@ func (r *productController) InsertProductCategory(categoryName *string) error {
 }
 
 func (r *productController) SelectAllProductCategories() ([]map[string]string, error) {
-	sqlCommand := `SELECT * FROM product_category`
-	results, err := r.GetCategories(&sqlCommand)
+	results, err := r.GetCategories()
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 
 		return nil, err
 	}
@@ -195,7 +196,7 @@ func (r *productController) RemoveProductCategory(id *string) error {
 	err := r.DeleteCategory(id)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 
 		return err
 	}
@@ -204,16 +205,7 @@ func (r *productController) RemoveProductCategory(id *string) error {
 }
 
 func (r *productController) IsCategoryMatch(id *string) bool {
-	sqlCommand := fmt.Sprintf(`SELECT EXISTS (SELECT true FROM product_category WHERE id='%s')`, *id)
-	result, err := r.QueryOnce(&sqlCommand)
+	result := r.IsCategoryExist(id)
 
-	if err != nil {
-		log.Fatal(err)
-
-		return false
-	}
-
-	ismatch, _ := result.(bool)
-
-	return ismatch
+	return result
 }

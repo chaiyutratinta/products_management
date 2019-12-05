@@ -14,14 +14,14 @@ import (
 //DB ...
 type DB interface {
 	InsertProduct(*models.Products) error
-	GetProducts(*string) ([]models.Products, error)
+	GetProducts() (*models.ProductResult, error)
 	Delete(*string) error
 	Update(*string, *string) error
-	GetDetail(*string) (*models.Products, error)
+	GetDetail(*string) (*models.ProductDetail, error)
 
 	//insert product category
-	GetCategories(*string) ([]models.Category, error)
-	QueryOnce(*string) (interface{}, error)
+	GetCategories() ([]models.Category, error)
+	IsCategoryExist(*string) bool
 	InsertCategory(*string, *string) error
 	DeleteCategory(*string) error
 }
@@ -45,31 +45,37 @@ func GetPostgresSession() DB {
 	}
 }
 
-func (db *dataBase) GetProducts(sqlCommand *string) ([]models.Products, error) {
-	rows, err := db.sqlDB.Query(*sqlCommand)
+func (db *dataBase) GetProducts() (*models.ProductResult, error) {
+	rows, err := db.sqlDB.Query(`
+		SELECT product.id, product.product_name, product.amount, product.expire, product.price, product_category.category_name  
+		FROM product
+		LEFT JOIN product_category
+		ON product.category_id = product_category.id
+	`)
 	defer rows.Close()
 
+	results := models.ProductResult{}
 	if err != nil {
 		log.Fatal(err)
-		return []models.Products{}, err
+
+		return &results, err
 	}
 
-	results := []models.Products{}
 	for rows.Next() {
 		var id, name, exp, cat string
 		var amount, price int
 		rows.Scan(&id, &name, &amount, &exp, &price, &cat)
-		results = append(results, models.Products{
-			ID:       id,
-			Name:     name,
-			Exp:      exp,
-			Category: cat,
-			Amount:   amount,
-			Price:    price,
+		results = append(results, map[string]interface{}{
+			"id":       id,
+			"name":     name,
+			"exp":      exp,
+			"category": cat,
+			"amount":   amount,
+			"price":    price,
 		})
 	}
 
-	return results, nil
+	return &results, nil
 }
 
 func (db *dataBase) InsertProduct(product *models.Products) error {
@@ -121,7 +127,7 @@ func (db *dataBase) Update(id, update *string) error {
 	return nil
 }
 
-func (db *dataBase) GetDetail(id *string) (*models.Products, error) {
+func (db *dataBase) GetDetail(id *string) (*models.ProductDetail, error) {
 	row := db.sqlDB.QueryRow(`
 		SELECT product.id, product.product_name, product.amount, product.expire, product.price, product_category.category_name
 		FROM product
@@ -135,23 +141,23 @@ func (db *dataBase) GetDetail(id *string) (*models.Products, error) {
 	var amount, price int
 
 	if err := row.Scan(&pid, &name, &amount, &exp, &price, &cat); err != nil {
-		return &models.Products{}, err
+		return &models.ProductDetail{}, err
 	}
 
-	results := models.Products{
-		ID:       pid,
-		Name:     name,
-		Exp:      exp,
-		Category: cat,
-		Amount:   amount,
-		Price:    price,
+	results := models.ProductDetail{
+		"id":       pid,
+		"name":     name,
+		"exp":      exp,
+		"category": cat,
+		"amount":   amount,
+		"price":    price,
 	}
 
 	return &results, nil
 }
 
-func (db *dataBase) GetCategories(sqlCommand *string) ([]models.Category, error) {
-	rows, err := db.sqlDB.Query(*sqlCommand)
+func (db *dataBase) GetCategories() ([]models.Category, error) {
+	rows, err := db.sqlDB.Query(`SELECT * FROM product_category`)
 	defer rows.Close()
 
 	if err != nil {
@@ -174,22 +180,16 @@ func (db *dataBase) GetCategories(sqlCommand *string) ([]models.Category, error)
 
 }
 
-func (db *dataBase) QueryOnce(sqlCommand *string) (interface{}, error) {
-	rows, err := db.sqlDB.Query(*sqlCommand)
-	defer rows.Close()
+func (db *dataBase) IsCategoryExist(id *string) bool {
+	row := db.sqlDB.QueryRow(`SELECT EXISTS (SELECT true FROM product_category WHERE id=($1))`, id)
+	var result bool
+	if err := row.Scan(&result); err != nil {
+		log.Println(err)
 
-	if err != nil {
-		log.Fatal(err)
-
-		return nil, err
+		return false
 	}
 
-	var result interface{}
-	for rows.Next() {
-		rows.Scan(&result)
-	}
-
-	return result, nil
+	return result
 }
 
 func (db *dataBase) InsertCategory(id, categoryName *string) error {

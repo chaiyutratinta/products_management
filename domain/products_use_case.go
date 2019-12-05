@@ -2,7 +2,6 @@ package domain
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -61,6 +60,9 @@ func (p *productUseCase) Add(writer http.ResponseWriter, req *http.Request) {
 
 	if err := decoder.Decode(body); err != nil {
 		log.Println(err)
+		writer.WriteHeader(http.StatusBadRequest)
+
+		return
 	}
 
 	validateBody := &struct {
@@ -81,7 +83,7 @@ func (p *productUseCase) Add(writer http.ResponseWriter, req *http.Request) {
 	invalidField := validator.Body(validateBody, models.Body{})
 
 	if ok := p.IsCategoryMatch(&body.Category); !ok {
-		invalidField["category"] = constance.RequestErrors["Category"]
+		invalidField["category"] = constance.RequestErrors["Category.required"]
 	}
 
 	if len(invalidField) > 0 {
@@ -118,7 +120,7 @@ func (p *productUseCase) Delete(writer http.ResponseWriter, req *http.Request) {
 	err := p.DeleteProduct(&id)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		writer.WriteHeader(http.StatusInternalServerError)
 
 		return
@@ -134,24 +136,21 @@ func (p *productUseCase) Edit(writer http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
 	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(getBody)
-
-	if err != nil {
+	if err := decoder.Decode(getBody); err != nil {
 		log.Println(err)
-		fmt.Println(err.Error())
 		writer.WriteHeader(http.StatusBadRequest)
 
 		return
 	}
 
-	err = p.UpdateProduct(&id, getBody)
-
-	if err != nil {
+	if reqErrs, err := p.UpdateProduct(&id, getBody); err != nil {
 		switch err.Error() {
-		case "category not match.", "bad request.":
+		case "bad request.":
 			{
+				resJson, _ := json.Marshal(reqErrs)
 				log.Println(err)
 				writer.WriteHeader(http.StatusBadRequest)
+				writer.Write(resJson)
 
 				return
 			}
@@ -178,7 +177,7 @@ func (p *productUseCase) GetDetail(writer http.ResponseWriter, req *http.Request
 	json, _ := json.Marshal(*result)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		writer.WriteHeader(http.StatusNotFound)
 
 		return
@@ -202,7 +201,7 @@ func (p *productUseCase) AddProductCategory(writer http.ResponseWriter, req *htt
 	err = p.InsertProductCategory(&categoryName)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		writer.WriteHeader(http.StatusNotFound)
 
 		return
@@ -218,7 +217,7 @@ func (p *productUseCase) GetProductCategories(writer http.ResponseWriter, req *h
 	json, err := json.Marshal(results)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		writer.WriteHeader(http.StatusInternalServerError)
 
 		return
@@ -234,7 +233,7 @@ func (p *productUseCase) DeleteProductCategory(writer http.ResponseWriter, req *
 	err := p.RemoveProductCategory(&id)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		writer.WriteHeader(http.StatusInternalServerError)
 
 		return
