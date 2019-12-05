@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"products_management/controller"
 	"products_management/models"
 	"products_management/repository"
+	"products_management/services"
 	"products_management/utils"
 )
 
@@ -27,15 +27,15 @@ type ProductUseCase interface {
 }
 
 type productUseCase struct {
-	controller.ProductController
+	services.ProductController
 }
 
 //GetProducts for get all products
 func GetProducts() ProductUseCase {
 	client := repository.GetPostgresSession()
-	controller := controller.NewController(client)
+	services := services.NewController(client)
 
-	return &productUseCase{controller}
+	return &productUseCase{services}
 }
 
 func (p *productUseCase) Get(writer http.ResponseWriter, req *http.Request) {
