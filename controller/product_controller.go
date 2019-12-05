@@ -12,19 +12,20 @@ import (
 	"products_management/constance"
 	"products_management/models"
 	"products_management/repository"
+	"products_management/validation"
 )
 
 //ProductController ...
 type ProductController interface {
 	GetAllProduct() *models.ProductResult
-	AddProduct(*models.Products) error
+	AddProduct(*models.Body) (*models.ResponseErrors, error)
 	DeleteProduct(*string) error
 	UpdateProduct(*string, *models.Body) (*models.ResponseErrors, error)
 	GetDetailProduct(*string) (*models.ProductDetail, error)
 
 	//insert product category
 	InsertProductCategory(*string) error
-	SelectAllProductCategories() ([]map[string]string, error)
+	SelectAllProductCategories() (models.ResponseCategory, error)
 	RemoveProductCategory(*string) error
 	IsCategoryMatch(*string) bool
 }
@@ -52,16 +53,50 @@ func (r *productController) GetAllProduct() *models.ProductResult {
 	return products
 }
 
-func (r *productController) AddProduct(product *models.Products) error {
+func (r *productController) AddProduct(body *models.Body) (*models.ResponseErrors, error) {
+	products := &struct {
+		Name     string `validate:"required"`
+		Exp      string `validate:"required,len=6"`
+		Category string `validate:"-"`
+		Amount   int    `validate:"min=1"`
+		Price    int    `validate:"min=1"`
+	}{
+		Name:     body.Name,
+		Exp:      body.Exp,
+		Category: body.Category,
+		Amount:   body.Amount,
+		Price:    body.Price,
+	}
+
+	validator := validation.New(constance.RequestErrors)
+	invalidField := validator.Body(products, models.Body{})
+
+	if ok := r.IsCategoryExist(&body.Category); !ok {
+		invalidField["category"] = constance.RequestErrors["Category.required"]
+	}
+
+	if len(invalidField) > 0 {
+
+		return &invalidField, fmt.Errorf("validate error.")
+	}
+
+	product := &models.Products{
+		ID:       (uuid.New()).String(),
+		Name:     body.Name,
+		Exp:      body.Exp,
+		Category: body.Category,
+		Amount:   body.Amount,
+		Price:    body.Price,
+	}
 	err := r.InsertProduct(product)
 
 	if err != nil {
 		log.Println(err)
 
-		return err
+		return nil, err
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (r *productController) DeleteProduct(id *string) error {
@@ -172,7 +207,7 @@ func (r *productController) InsertProductCategory(categoryName *string) error {
 	return nil
 }
 
-func (r *productController) SelectAllProductCategories() ([]map[string]string, error) {
+func (r *productController) SelectAllProductCategories() (models.ResponseCategory, error) {
 	results, err := r.GetCategories()
 
 	if err != nil {
@@ -181,7 +216,7 @@ func (r *productController) SelectAllProductCategories() ([]map[string]string, e
 		return nil, err
 	}
 
-	categories := []map[string]string{}
+	categories := models.ResponseCategory{}
 	for _, elm := range results {
 		categories = append(categories, map[string]string{
 			"id":   elm.ID,

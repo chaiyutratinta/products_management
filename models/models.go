@@ -28,3 +28,5 @@ type ProductDetail map[string]interface{}
 type ProductResult []ProductDetail
 
 type ResponseErrors map[string]string
+
+type ResponseCategory []map[string]string

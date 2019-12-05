@@ -6,14 +6,10 @@ import (
 	"net/http"
 	"strings"
 
-	"products_management/constance"
 	"products_management/controller"
 	"products_management/models"
 	"products_management/repository"
 	"products_management/utils"
-	"products_management/validation"
-
-	"github.com/google/uuid"
 )
 
 //ProductUseCase ...
@@ -65,49 +61,23 @@ func (p *productUseCase) Add(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	validateBody := &struct {
-		Name     string `validate:"required"`
-		Exp      string `validate:"required,len=6"`
-		Category string `validate:"-"`
-		Amount   int    `validate:"min=1"`
-		Price    int    `validate:"min=1"`
-	}{
-		Name:     body.Name,
-		Exp:      body.Exp,
-		Category: body.Category,
-		Amount:   body.Amount,
-		Price:    body.Price,
-	}
+	if resErrs, err := p.AddProduct(body); err != nil {
+		switch err.Error() {
+		case "validate error.":
+			{
+				log.Println(err)
+				resJson, _ := json.Marshal(resErrs)
+				writer.WriteHeader(http.StatusBadRequest)
+				writer.Write(resJson)
+			}
+		default:
+			{
+				log.Println(err)
+				writer.WriteHeader(http.StatusInternalServerError)
 
-	validator := validation.New(constance.RequestErrors)
-	invalidField := validator.Body(validateBody, models.Body{})
-
-	if ok := p.IsCategoryMatch(&body.Category); !ok {
-		invalidField["category"] = constance.RequestErrors["Category.required"]
-	}
-
-	if len(invalidField) > 0 {
-		result, _ := json.Marshal(invalidField)
-		writer.WriteHeader(http.StatusBadRequest)
-		writer.Write(result)
-
-		return
-	}
-
-	product := &models.Products{
-		ID:       (uuid.New()).String(),
-		Name:     body.Name,
-		Exp:      body.Exp,
-		Category: body.Category,
-		Amount:   body.Amount,
-		Price:    body.Price,
-	}
-
-	if err := p.AddProduct(product); err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-
-		return
+				return
+			}
+		}
 	}
 
 	writer.WriteHeader(http.StatusOK)

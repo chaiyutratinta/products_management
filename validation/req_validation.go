@@ -2,13 +2,14 @@ package validation
 
 import (
 	"fmt"
+	"products_management/models"
 	"reflect"
 
 	"gopkg.in/go-playground/validator.v9"
 )
 
 type Validator interface {
-	Body(interface{}, interface{}) map[string]string
+	Body(interface{}, interface{}) models.ResponseErrors
 }
 
 type errorMessage struct {
@@ -23,10 +24,10 @@ func New(errMessage map[string]string) Validator {
 	}
 }
 
-func (errMsg *errorMessage) Body(body interface{}, bodyType interface{}) map[string]string {
+func (errMsg *errorMessage) Body(body interface{}, bodyType interface{}) models.ResponseErrors {
 	validate := validator.New()
 	err := validate.Struct(body)
-	invalid := make(map[string]string)
+	invalid := make(models.ResponseErrors)
 
 	if err == nil {
 		return invalid
