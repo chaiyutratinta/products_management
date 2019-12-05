@@ -19,7 +19,7 @@ type ProductController interface {
 	GetAllProduct() *models.ProductResult
 	AddProduct(*models.Products) error
 	DeleteProduct(*string) error
-	UpdateProduct(*string, *models.Body) (*map[string]string, error)
+	UpdateProduct(*string, *models.Body) (*models.ResponseErrors, error)
 	GetDetailProduct(*string) (*models.ProductDetail, error)
 
 	//insert product category
@@ -77,13 +77,13 @@ func (r *productController) DeleteProduct(id *string) error {
 	return nil
 }
 
-func (r *productController) UpdateProduct(id *string, body *models.Body) (*map[string]string, error) {
+func (r *productController) UpdateProduct(id *string, body *models.Body) (*models.ResponseErrors, error) {
 	validateBody := &struct {
 		Name     string `validate:"required"`
 		Exp      string `validate:"required,len=0|len=6"`
 		Category string `validate:"required"`
-		Amount   int    `validate:"required,number,min=1"`
-		Price    int    `validate:"required,number,min=1"`
+		Amount   int    `validate:"isdefault,number,min=1"`
+		Price    int    `validate:"isdefault,number,min=1"`
 	}{
 		Name:     body.Name,
 		Exp:      body.Exp,
@@ -99,7 +99,7 @@ func (r *productController) UpdateProduct(id *string, body *models.Body) (*map[s
 		"Price":    "price",
 	}
 	category := validateBody.Category
-	requestErrors := make(map[string]string)
+	requestErrors := make(models.ResponseErrors)
 
 	if category != "" && !r.IsCategoryMatch(&category) {
 		requestErrors["category"] = "category not match."
@@ -112,7 +112,7 @@ func (r *productController) UpdateProduct(id *string, body *models.Body) (*map[s
 		field := elm.Field()
 		tag := elm.ActualTag()
 
-		if tag == "required" {
+		if tag == "required" || tag == "isdefault" {
 			delete(mapFiledColumn, field)
 		} else {
 			requestErrors[mapFiledColumn[field]] = constance.RequestErrors[fmt.Sprintf("%s.%s", field, tag)]
