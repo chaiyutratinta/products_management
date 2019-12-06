@@ -35,6 +35,7 @@ func GetPostgresSession() DB {
 	conf := configs.Config.Database
 	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", conf.Username, conf.Password, conf.Server, conf.DatabaseName)
 	db, err := sql.Open("postgres", connStr)
+	err = db.Ping()
 
 	if err != nil {
 		log.Fatal(err)
@@ -56,7 +57,7 @@ func (db *dataBase) GetProducts() (*models.ProductResult, error) {
 
 	results := models.ProductResult{}
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 
 		return &results, err
 	}
@@ -83,7 +84,7 @@ func (db *dataBase) InsertProduct(product *models.Products) error {
 	defer stmt.Close()
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 
 		return err
 	}
@@ -99,7 +100,7 @@ func (db *dataBase) Delete(id *string) error {
 	_, err := db.sqlDB.Exec("DELETE FROM product WHERE id=($1)", *id)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 
 		return err
 	}
@@ -113,13 +114,13 @@ func (db *dataBase) Update(id, update *string) error {
 	defer stmt.Close()
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 
 		return err
 	}
 
 	if _, err := stmt.Exec(); err != nil {
-		log.Fatal(err)
+		log.Println(err)
 
 		return err
 	}
@@ -161,7 +162,7 @@ func (db *dataBase) GetCategories() ([]models.Category, error) {
 	defer rows.Close()
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 
 		return nil, err
 	}
@@ -197,13 +198,13 @@ func (db *dataBase) InsertCategory(id, categoryName *string) error {
 	defer stmt.Close()
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 
 		return err
 	}
 
 	if _, err := stmt.Exec(*id, *categoryName); err != nil {
-		log.Fatal(err)
+		log.Println(err)
 
 		return err
 	}
@@ -215,7 +216,7 @@ func (db *dataBase) DeleteCategory(id *string) error {
 	_, err := db.sqlDB.Exec("DELETE FROM product_category WHERE id=($1)", *id)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 
 		return err
 	}

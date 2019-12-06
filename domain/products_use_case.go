@@ -171,10 +171,25 @@ func (p *productUseCase) AddProductCategory(writer http.ResponseWriter, req *htt
 	err = p.InsertProductCategory(&categoryName)
 
 	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusNotFound)
+		switch err.Error() {
+		case `pq: duplicate key value violates unique constraint "product_category_category_name_key"`:
+			{
 
-		return
+				log.Println(err)
+				json, _ := json.Marshal(models.ResponseErrors{"name": "duplicate"})
+				writer.WriteHeader(http.StatusBadRequest)
+				writer.Write(json)
+
+				return
+			}
+		default:
+			{
+				log.Println(err)
+				writer.WriteHeader(http.StatusBadRequest)
+
+				return
+			}
+		}
 	}
 
 	writer.WriteHeader(http.StatusOK)
