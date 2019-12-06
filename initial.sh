@@ -6,7 +6,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
 
 CREATE TABLE product_category(
 	id VARCHAR PRIMARY KEY, 
-	category_name VARCHAR(30) NOT NULL
+	category_name VARCHAR(30) NOT NULL UNIQUE
 );
 
 CREATE TABLE product( 

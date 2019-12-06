@@ -6,7 +6,7 @@ services:
         container_name: product_management_db
         restart: always
         ports:
-            - "5432"
+            - "5432:5432"
         environment:
             POSTGRES_USER: admin
             POSTGRES_PASSWORD: nimda
@@ -22,7 +22,7 @@ services:
         container_name: product_management_app
         restart: always
         ports:
-            - "8080"
+            - "8080:8080"
         networks:
             - product_management
     
